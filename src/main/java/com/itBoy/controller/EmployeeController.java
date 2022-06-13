@@ -76,6 +76,9 @@ public class EmployeeController {
     @PutMapping("/psd")
     public R updatepsd(@RequestBody Employee employee){
         String password = employee.getPassword();
+        if(password.length()<6){
+            return new R(false,"密码必须为6位数以上");
+        }
         employee.setPassword(DigestUtils.md5DigestAsHex(password.getBytes(StandardCharsets.UTF_8)));
         boolean flag = employeeService.updateById(employee);
         return new R(flag, flag ? "添加成功^_^" : "添加失败-_-!");
@@ -90,6 +93,9 @@ public class EmployeeController {
     public R recharge(@RequestBody Employee employee){
         Long userId = employee.getId();
         Integer addMoney = employee.getMoney();
+        if(addMoney<0 ||addMoney>1000){
+            return new R(false,"充值金额必须在0-1000内");
+        }
         Employee user = employeeService.getById(userId);
         user.setMoney(user.getMoney()+addMoney);
         employeeService.updateById(user);

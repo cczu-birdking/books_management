@@ -40,7 +40,9 @@ public class BookController {
 
     @PostMapping
     public R save(@RequestBody Book book) {
-        //如果可以判断输入的格式那就更好了
+        if(book.getPrice()<0){
+            return new R(false,"图书价格必须大于0");
+        }
         boolean flag = bookService.save(book);
         return new R(flag, flag ? "添加成功^_^" : "添加失败-_-!");
     }
@@ -66,6 +68,9 @@ public class BookController {
      */
     @PutMapping
     public R update(@RequestBody Book book) {
+        if(book.getPrice()<0){
+            return new R(false,"图书价格必须大于0");
+        }
         boolean flag = bookService.updateById(book);
         return new R(flag, flag ? "修改成功^_^" : "修改失败-_-!");
     }
@@ -186,6 +191,47 @@ public class BookController {
         }
     }
 
+
+    /**
+     * 用户借书
+     * @param ids
+     * @return
+     */
+    @PutMapping("/lend")
+    public R lendBeforeBook(@RequestBody Ids ids){
+        Long bookId = ids.getBookId();
+        Long userId = ids.getUserId();
+        //获取用户信息
+        Employee user = employeeService.getById(userId);
+        //获取图书信息
+        Book book = bookService.getById(bookId);
+        //首先是判断图书剩余库存
+        if(book.getCount()>0){
+            //这里的图书全部是售卖状态的，那么我们就要判断客户借书的总价值，就是未出账的价格和余额哪个大
+            if(user.getMoney()<(user.getLendmoney()+book.getPrice())){
+                return new R(false,"余额不足，请及时充值！");
+            }else{
+                //用户余额减少！
+                user.setLendmoney(user.getLendmoney()+book.getPrice());
+                //图书库存减一本，卖出数量加一本
+                book.setCount(book.getCount()-1);
+                book.setLend(book.getCount()+1);
+                employeeService.updateById(user);
+                bookService.updateById(book);
+                Detail detail = new Detail();
+                detail.setUserId(userId);
+                detail.setBookId(bookId);
+                detail.setAction("借阅图书！");
+                detail.setUpdateTime(LocalDateTime.now());
+                boolean b = detailService.save(detail);
+                return new R(true,user);
+            }
+        }else{
+            return new R(false,"当前图书剩余数量不足！");
+        }
+    }
+
+
     /**
      * 图书归还
      * @param id
@@ -208,12 +254,8 @@ public class BookController {
         employee.setLendmoney(employee.getLendmoney()-book.getPrice());
         //然后就是借书的费用了
         LocalDateTime createTime = detail.getCreateTime();
-        LocalDateTime now = LocalDateTime.now();
-        System.out.println(createTime);
-        System.out.println(now);
+        LocalDateTime now = LocalDateTime.now();;
         long hours = ChronoUnit.HOURS.between(createTime, now);
-        System.out.println("here is me");
-        System.out.println(hours);
         //给顾客俩小时的余地
         long lendTime = (hours-336)-2;
         int spendMoney;
@@ -235,10 +277,18 @@ public class BookController {
     }
 
 
-    @PutMapping("/lend")
-    public R lendBook(@RequestBody Ids ids){
-        Long bookId = ids.getBookId();
-        Long userId = ids.getUserId();
+    /**
+     * 管理员给预约图书的用户借书
+     * 这里和借书的不同点在于需要删除原本的
+     * @param
+     * @return
+     */
+    @Transactional
+    @PutMapping("/lendBefore/{id}")
+    public R lendBeforeBook(@PathVariable int id){
+        Detail detail1 = detailService.getById(id);
+        Long bookId = detail1.getBookId();
+        Long userId = detail1.getUserId();
         //获取用户信息
         Employee user = employeeService.getById(userId);
         //获取图书信息
@@ -260,6 +310,47 @@ public class BookController {
                 detail.setUserId(userId);
                 detail.setBookId(bookId);
                 detail.setAction("借阅图书！");
+                detail.setUpdateTime(LocalDateTime.now());
+                boolean b = detailService.save(detail);
+                detailService.removeById(id);
+                return new R(true,user);
+            }
+        }else{
+            return new R(false,"当前图书剩余数量不足！");
+        }
+    }
+
+    /**
+     * 用户预约图书
+     * @param
+     * @return
+     */
+    @Transactional
+    @PutMapping("/customLendBefore")
+    public R lendBefore(@RequestBody Ids ids){
+        Long bookId = ids.getBookId();
+        Long userId = ids.getUserId();
+        //获取用户信息
+        Employee user = employeeService.getById(userId);
+        //获取图书信息
+        Book book = bookService.getById(bookId);
+        //首先是判断图书剩余库存
+        if(book.getCount()>0){
+            //这里的图书全部是售卖状态的，那么我们就要判断客户借书的总价值，就是未出账的价格和余额哪个大
+            if(user.getMoney()<(user.getLendmoney()+book.getPrice())){
+                return new R(false,"余额不足，请及时充值！");
+            }else{
+                //用户余额减少！
+                user.setLendmoney(user.getLendmoney()+book.getPrice());
+                //图书库存减一本，卖出数量加一本
+                book.setCount(book.getCount()-1);
+                book.setLend(book.getCount()+1);
+                employeeService.updateById(user);
+                bookService.updateById(book);
+                Detail detail = new Detail();
+                detail.setUserId(userId);
+                detail.setBookId(bookId);
+                detail.setAction("预约图书！");
                 detail.setUpdateTime(LocalDateTime.now());
                 boolean b = detailService.save(detail);
                 return new R(true,user);

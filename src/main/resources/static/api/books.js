@@ -49,9 +49,9 @@ function updateUsers (params) {
 }
 
 // 修改---添加图书
-function editBooks (id) {
+function editBooks () {
   return $axios({
-    url: `/books/${id}`,
+    url: `/books`,
     method: 'put'
   })
 }

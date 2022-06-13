@@ -2,11 +2,8 @@ package com.itBoy.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.itBoy.entity.Book;
+import com.itBoy.entity.*;
 import com.itBoy.entity.Common.R;
-import com.itBoy.entity.Detail;
-import com.itBoy.entity.DetailPage;
-import com.itBoy.entity.Employee;
 import com.itBoy.entity.dto.DetailDto;
 import com.itBoy.entity.dto.Dto;
 import com.itBoy.service.BookService;
@@ -14,10 +11,13 @@ import com.itBoy.service.DetailService;
 import com.itBoy.service.EmployeeService;
 import com.sun.webkit.dom.CSSPageRuleImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.awt.print.Pageable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +33,22 @@ public class DetailController {
     private DetailService detailService;
     @Autowired
     private EmployeeService employeeService;
+
+
+    /**
+     * 根据订单号查询图书id和用户id，返回给前端
+     * @return
+     */
+    @GetMapping("/{id}")
+    public R getIds(@PathVariable int id){
+        Detail detail = detailService.getById(id);
+        Long bookId = detail.getBookId();
+        Long userId = detail.getUserId();
+        Ids ids = new Ids();
+        ids.setBookId(bookId);
+        ids.setUserId(userId);
+        return new R(true,ids);
+    }
 
 
     /**
@@ -69,6 +85,38 @@ public class DetailController {
 
         //执行查询
         return new R(true,detailDtoList);
+    }
+
+    @Transactional
+    @PutMapping("/check")
+    public R rule(){
+        int count=0;
+        LambdaQueryWrapper<Detail> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Detail::getAction,"预约图书！");
+        List<Detail> list = detailService.list(lambdaQueryWrapper);
+        System.out.println("here is me ");
+        System.out.println(list);
+        for (Detail item : list) {
+            LocalDateTime createTime = item.getCreateTime();
+            System.out.println(createTime);
+            LocalDateTime now = LocalDateTime.now();;
+            long hours = ChronoUnit.HOURS.between(createTime, now);
+            System.out.println("here is me ");
+            System.out.println(hours);
+            if(hours>168){
+                item.setAction("预约超时！");
+                Long userId = item.getUserId();
+                Employee employee = employeeService.getById(userId);
+                employee.setMoney(employee.getMoney()-5);
+                employeeService.updateById(employee);
+                detailService.updateById(item);
+                count++;
+            }
+        }
+        if(count>0){
+            return new R(true,"注意！有用户未按预定时间借书");
+        }
+        return new R(true,"");
     }
 
     /**

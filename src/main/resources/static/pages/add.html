@@ -218,11 +218,10 @@
                       this.$message.error('请上传图书图片')
                       return
                     }
-                    if (res.flag === true) {
+                    if (res.data.flag === true) {
                       this.$message.success('图书信息添加成功！')
                       if (!st) {
                         this.goBack()
-
                       } else {
                         this.ruleForm = {
                           type: '',
@@ -240,20 +239,18 @@
                     this.$message.error('请求出错了：' + err)
                   })
                 } else {
-                  const params = {
-                    ...this.ruleForm,
-                  }
-                  editBooks(params.id).then(res => {
-                    if (res.flag === true) {
+                  const params =this.ruleForm
+                  axios.put("/books",params).then(res => {
+                    if (res.data.flag === true) {
                       this.goBack()
                       this.$message.success('图书信息修改成功！')
                     } else {
-                      this.$message.error(res.msg || '操作失败')
+                      this.$message.error(res.data.msg || '操作失败')
                     }
                   }).catch(err => {
                     this.$message.error('请求出错了：' + err)
                   })
-                }
+              }
               }else {
                 console.log('error submit!!')
                 return false
