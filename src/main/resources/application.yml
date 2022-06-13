@@ -1,0 +1,26 @@
+server:
+  port: 80
+
+spring:
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/book_management?serverTimezone=UTC
+      username: root
+      password: fengge5201314
+
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    #开启驼峰命名法
+    map-underscore-to-camel-case: true
+
+host6:
+  name: admin
+  password: e10adc3949ba59abbe56e057f20f883e
+
+reggie:
+  path: D:\bookimage\

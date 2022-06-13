@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="../plugins/elementui/index.css" />
+  <link rel="stylesheet" href="../styles/common.css" />
+  <link rel="stylesheet" href="../styles/page.css" />
+</head>
+<body>
+  <div class="addBrand-container" id="member-add-app">
+    <div class="container">
+      <el-form
+        ref="ruleForm"
+        :model="ruleForm"
+        :rules="rules"
+        :inline="false"
+        label-width="180px"
+        class="demo-ruleForm"
+      >
+        <el-form-item label="用户名:" prop="name">
+          <span>{{ruleForm.name}}</span>
+        </el-form-item>
+
+
+        <el-form-item label="账户余额:" prop="pass">
+          <span>{{ruleForm.money}}</span>
+        </el-form-item>
+        <el-form-item label="待出账金额:" prop="password">
+          <span>{{ruleForm.lendmoney}}</span>
+        </el-form-item>
+
+
+
+
+
+          <div>
+            <el-form-item
+                    label="头像:"
+                    class="uploadImg"
+            >
+              <el-upload
+                      class="avatar-uploader"
+                      action="/common/upload"
+                      :show-file-list="false"
+                      :on-success="handleAvatarSuccess"
+                      :on-change="onChange"
+                      ref="upload"
+              >
+                <img
+                        v-if="imageUrl"
+                        :src="imageUrl"
+                        class="avatar"
+                />
+                <i
+                        v-else
+                        class="el-icon-plus avatar-uploader-icon"
+                ></i>
+              </el-upload>
+            </el-form-item>
+          </div>
+
+        <div class="subBox address">
+
+            <el-button
+              type="primary"
+              @click="update()">
+              修改
+            </el-button>
+
+          </el-form-item>
+        </div>
+      </el-form>
+    </div>
+  </div>
+    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="../plugins/vue/vue.js"></script>
+    <!-- 引入组件库 -->
+    <script src="../plugins/elementui/index.js"></script>
+    <!-- 引入axios -->
+    <script src="../plugins/axios/axios.min.js"></script>
+    <script src="../js/request.js"></script>
+    <script src="../api/books.js"></script>
+    <script src="../js/validate.js"></script>
+    <script src="../js/index.js"></script>
+    <script>
+      new Vue({
+        el: '#member-add-app',
+        data() {
+          return {
+            imageUrl: '',
+            id: '',
+            actionType : '',
+            ruleForm : {
+                'name': '',
+                'image':'',
+              'money':'',
+              'lendmoney':''
+            }
+          }
+        },
+        computed: {
+          rules () {
+            return {
+              //姓名
+              name: [{required: true, 'validator': checkUserName, trigger: 'blur'}],
+              password: [{ required: true, 'validator': checkPassword, trigger: 'blur' }],
+              pass: [{ required: true, 'validator': checkPassword, trigger: 'blur' }],
+            }
+          }
+        },
+        created() {
+          const userInfo = window.localStorage.getItem('userInfo')
+          if (userInfo) {
+            this.userInfo = JSON.parse(userInfo)
+            this.init()
+          }else{
+            window.location.href= '/pages/custome_login.html'
+          }
+        },
+        mounted() {
+        },
+        methods: {
+          //进来先同步数据
+          init(){
+            userId=this.userInfo.id;
+            axios.get("/employee/"+userId).then((res)=>{
+              this.imageUrl = `/common/download?name=${res.data.data.image}`
+              this.ruleForm=res.data.data
+            });
+          },
+          handleAvatarSuccess (response, file, fileList) {
+            // 拼接down接口预览
+            if(response.flag === false && response.msg === '未登录'){
+              window.top.location.href = '/login/page/login/login.html'
+            }else{
+              this.imageUrl = `/common/download?name=${response.msg}`
+              this.ruleForm.image = response.msg
+            }
+          },
+          onChange (file) {
+            if(file){
+              const suffix = file.name.split('.')[1]
+              const size = file.size / 1024 / 1024 < 2
+              if(['png','jpeg','jpg'].indexOf(suffix) < 0){
+                this.$message.error('上传图片只支持 png、jpeg、jpg 格式！')
+                this.$refs.upload.clearFiles()
+                return false
+              }
+              if(!size){
+                this.$message.error('上传文件大小不能超过 2MB!')
+                return false
+              }
+              return file
+            }
+          },
+
+
+
+          update() {
+            this.$confirm("此操作永久修改用户信息，是否继续？", "提示", {type: "info"}).then(() => {
+              if ( this.ruleForm.image === '') {
+                this.$message.error("信息未填写完全！注意")
+              } else {
+                  //注册成功！，现在可以上传数据了
+                  let params = {...this.ruleForm}
+                  updateUsers(params).then(res => {
+                    if (res.flag === true) {
+                      localStorage.setItem('userInfo',JSON.stringify(res.data))
+                      this.$message.success("信息更改成功！F5即可刷新")
+                      // window.location.href = '/pages/books_custom.html'
+                      // window.location.href = window.location.href;
+                    } else {
+                      this.$message.error(res.msg)
+                    }
+                  })
+              }
+            }).catch(() => {
+              this.$message.info("取消操作");
+            });
+          }
+
+        }
+      })
+    </script>
+</body>
+</html>
