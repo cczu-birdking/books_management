@@ -218,7 +218,7 @@
                       this.$message.error('请上传图书图片')
                       return
                     }
-                    if (res.data.flag === true) {
+                    if (res.flag === true) {
                       this.$message.success('图书信息添加成功！')
                       if (!st) {
                         this.goBack()

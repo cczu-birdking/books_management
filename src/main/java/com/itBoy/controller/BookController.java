@@ -71,6 +71,7 @@ public class BookController {
         if(book.getPrice()<0){
             return new R(false,"图书价格必须大于0");
         }
+        book.setStatus(1);
         boolean flag = bookService.updateById(book);
         return new R(flag, flag ? "修改成功^_^" : "修改失败-_-!");
     }
@@ -340,8 +341,6 @@ public class BookController {
             if(user.getMoney()<(user.getLendmoney()+book.getPrice())){
                 return new R(false,"余额不足，请及时充值！");
             }else{
-                //用户余额减少！
-                user.setLendmoney(user.getLendmoney()+book.getPrice());
                 //图书库存减一本，卖出数量加一本
                 book.setCount(book.getCount()-1);
                 book.setLend(book.getCount()+1);
